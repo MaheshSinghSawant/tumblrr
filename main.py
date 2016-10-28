@@ -44,24 +44,29 @@ class LoginPage(webapp2.RequestHandler):
         user = users.get_current_user()
 
         if user:
-            url = self.request.uri + 'form'
-            logging_out_url = users.create_logout_url(self.request.uri)
+            url = users.create_logout_url(self.request.uri)
+            url_linktext = 'Logout'
+            upload_url = self.request.uri + 'form'
+            upload_url_linktext = 'Upload Data'
             nickname = user.nickname()
             greeting = 'Welcome, {} '.format(nickname)
-            url_linktext = 'Images'
-            logging_out_url_text = 'Logout'
 
             p = 'loggedin.html'
         else:
+            upload_url = self.request.uri
+            upload_url_linktext = ''
             url = users.create_login_url(self.request.uri)
             greeting = 'Welcome please log in: '
             url_linktext = 'Login'
-            p = 'index.html'
+            p = 'loggedout.html'
 
         template_values = {
+
             'greeting': greeting,
             'url': url,
-            'url_linktext': url_linktext
+            'url_linktext': url_linktext,
+            'upload_url': upload_url,
+            'upload_text': upload_url_linktext
         }
 
         path = os.path.join(os.path.dirname(__file__), p)
@@ -95,13 +100,13 @@ class PhotoUploadFormHandler(webapp2.RequestHandler):
 class PhotoUploadHandler(blobstore_handlers.BlobstoreUploadHandler):
     def post(self):
         try:
-            upload = self.get_uploads()[0]
+            upload = self.get_uploads()
             user_photo = UserPhoto(
                 user=users.get_current_user().user_id(),
-                blob_key=upload.key())
+                blob_key=upload[0].key())
             user_photo.put()
 
-            self.redirect('/view_photo/%s' % upload.key())
+            self.redirect('/view_photo/%s' % upload[0].key())
 
         except:
             self.error(500)
